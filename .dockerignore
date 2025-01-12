@@ -1,0 +1,32 @@
+# Ignore build artifacts
+build/
+*.o
+*.out
+*.obj
+*.exe
+*.log
+
+# Ignore IDE and editor configuration files
+*.idea/
+*.vscode/
+*.swp
+
+# Ignore temporary and backup files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Ignore version control metadata
+.git/
+.gitignore
+
+# Ignore Docker-specific files
+.dockerignore
+docker-compose.yml
+
+# Ignore CMake build artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
