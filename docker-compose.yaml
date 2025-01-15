@@ -1,19 +1,10 @@
-version: "3.9"
+version: '3.8'
+
 services:
-  api:
-    build: .
+  todo-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
-    depends_on:
-      - mongo
-    environment:
-      - MONGODB_URI=mongodb://mongo:27017/todo_db
-  mongo:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data_container:/data/db
-
-volumes:
-  mongodb_data_container:
+    restart: always

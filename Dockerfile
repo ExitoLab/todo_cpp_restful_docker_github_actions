@@ -1,46 +1,46 @@
-FROM debian:bullseye-slim
+# Stage 1: Build Stage
+# Use an official GCC image to build the C++ application
+FROM gcc:14.2.0 AS build
 
-# Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        build-essential \
-        cmake \
-        git \
-        libcurl4-openssl-dev \
-        libssl-dev \
-        gnupg \
-        wget \
-        && rm -rf /var/lib/apt/lists/*
+# Install required libraries and dependencies for building the app
+RUN apt-get update && apt-get install -y \
+    libsqlite3-dev \
+    cmake \
+    make \
+    wget \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Add MongoDB repository
-RUN wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc
-RUN apt-key add - < server-6.0.asc  # Replace server-6.0.asc with the downloaded filename (if different)
-
-RUN echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bullseye/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-
-# Install MongoDB C++ Driver dependencies
-RUN apt-get update && \
-    apt-get install -y libboost-dev libbsoncxx-dev libmongocxx-dev && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install crow
-RUN git clone https://github.com/ipkn/crow.git /tmp/crow && \
-    mkdir /tmp/crow/build && cd /tmp/crow/build && \
-    cmake .. && make install && rm -rf /tmp/crow
-
-# Set working directory
+# Set the working directory for the build process
 WORKDIR /app
 
-# Copy CMakeLists.txt and source code
-COPY CMakeLists.txt .
-COPY main.cpp .
+# Download ASIO and Crow libraries from GitHub
+RUN git clone https://github.com/chriskohlhoff/asio.git asio
+RUN git clone https://github.com/CrowCpp/Crow.git crow
 
-# Configure and build the application
-RUN mkdir build && cd build && \
-    cmake .. && make
+# Copy your source code (main.cpp) into the container
+COPY . .
 
-# Expose the application port
+# Build the application using g++
+RUN g++ -Icrow/include -Iasio/asio/include -o todo_app main.cpp -lsqlite3 -lpthread
+
+# Stage 2: Runtime Stage
+# Use an official GCC image (same as the build stage) for runtime
+FROM gcc:14.2.0
+
+# Install only the runtime dependencies needed to run the app
+RUN apt-get update && apt-get install -y \
+    libsqlite3-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory for the runtime container
+WORKDIR /app
+
+# Copy the compiled binary (todo_app) from the build stage into the runtime container
+COPY --from=build /app/todo_app .
+
+# Expose port 8080 for your app (modify this if needed based on your app's settings)
 EXPOSE 8080
 
-# Command to run the application
-CMD ["./build/todo_cpp"]
+# Set the default command to run the application
+CMD ["./todo_app"]
